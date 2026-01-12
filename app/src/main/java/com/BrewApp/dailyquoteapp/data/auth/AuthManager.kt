@@ -1,6 +1,7 @@
 package com.BrewApp.dailyquoteapp.data.auth
 
 
+import android.util.Log
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.builtin.Email
 
@@ -12,6 +13,7 @@ class AuthManager {
         return try {
             supabase.auth.currentUserOrNull() != null
         } catch (e: Exception) {
+            Log.e("AuthManager", "Error checking login status", e)
             false
         }
     }
@@ -21,6 +23,7 @@ class AuthManager {
         return try {
             supabase.auth.currentUserOrNull()?.email
         } catch (e: Exception) {
+            Log.e("AuthManager", "Error getting user email", e)
             null
         }
     }
@@ -34,6 +37,7 @@ class AuthManager {
             }
             AuthResult.Success
         } catch (e: Exception) {
+            Log.e("AuthManager", "Sign up failed", e)
             AuthResult.Error(e.message ?: "Sign up failed")
         }
     }
@@ -47,7 +51,16 @@ class AuthManager {
             }
             AuthResult.Success
         } catch (e: Exception) {
-            AuthResult.Error(e.message ?: "Sign in failed")
+            Log.e("AuthManager", "Sign in failed", e)
+            // Check for specific Supabase error messages
+            val errorMessage = e.message ?: ""
+            if (errorMessage.contains("Email not confirmed", ignoreCase = true)) {
+                AuthResult.Error("Please verify your email address to login.")
+            } else if (errorMessage.contains("Invalid login credentials", ignoreCase = true)) {
+                AuthResult.Error("Invalid email or password.")
+            } else {
+                AuthResult.Error(errorMessage.ifBlank { "Sign in failed" })
+            }
         }
     }
 
@@ -57,6 +70,7 @@ class AuthManager {
             supabase.auth.signOut()
             AuthResult.Success
         } catch (e: Exception) {
+            Log.e("AuthManager", "Sign out failed", e)
             AuthResult.Error(e.message ?: "Sign out failed")
         }
     }
@@ -67,6 +81,7 @@ class AuthManager {
             supabase.auth.resetPasswordForEmail(email)
             AuthResult.Success
         } catch (e: Exception) {
+            Log.e("AuthManager", "Password reset failed", e)
             AuthResult.Error(e.message ?: "Password reset failed")
         }
     }
