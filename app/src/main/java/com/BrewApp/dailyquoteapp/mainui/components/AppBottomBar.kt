@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -18,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.BrewApp.dailyquoteapp.navigation.Screens
 import com.BrewApp.dailyquoteapp.ui.theme.BorderLight
@@ -33,7 +36,9 @@ fun AppBottomNavBar(navController: NavController) {
     // Define items for the bottom bar
     val items = listOf(
         NavigationItem(Screens.Home.route, "Home", Icons.Filled.Home),
-        NavigationItem(Screens.Favorites.route, "Favorites", Icons.Filled.Favorite)
+        NavigationItem(Screens.Discovery.route, "Discovery", Icons.Filled.Search),
+        NavigationItem(Screens.Favorites.route, "Favorites", Icons.Filled.Favorite),
+        NavigationItem(Screens.Profile.route, "Profile", Icons.Filled.Person)
     )
 
     NavigationBar(
@@ -62,7 +67,7 @@ fun AppBottomNavBar(navController: NavController) {
                         navController.navigate(item.route) {
                             // Pop up to the start destination of the graph to
                             // avoid building up a large stack of destinations
-                            popUpTo(Screens.Home.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
                             }
                             // Avoid multiple copies of the same destination

@@ -168,9 +168,9 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                 isPrimary = false,
                 onClick = {
                     val sendIntent = Intent().apply {
-                        Intent.setAction = Intent.ACTION_SEND
+                        action = Intent.ACTION_SEND
                         putExtra(Intent.EXTRA_TEXT, "\"${currentQuote.text}\" - ${currentQuote.author}\n\nVia Daily Quotes App")
-                        Intent.setType = "text/plain"
+                        type = "text/plain"
                     }
                     val shareIntent = Intent.createChooser(sendIntent, null)
                     context.startActivity(shareIntent)
