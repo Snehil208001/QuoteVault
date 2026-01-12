@@ -1,67 +1,41 @@
-import androidx.lifecycle.ViewModel
+package com.BrewApp.dailyquoteapp.mainui
+
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.BrewApp.dailyquoteapp.data.model.FavouriteItem
-import com.BrewApp.dailyquoteapp.data.model.FavouriteUiState
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.BrewApp.dailyquoteapp.data.db.AppDatabase
+import com.BrewApp.dailyquoteapp.data.db.FavoriteQuote
+import com.BrewApp.dailyquoteapp.data.model.Quote
+import com.BrewApp.dailyquoteapp.data.repository.QuoteRepository
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class FavouriteViewModel : ViewModel() {
+class FavouriteViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _uiState = MutableStateFlow<FavouriteUiState>(FavouriteUiState.Loading)
-    val uiState: StateFlow<FavouriteUiState> = _uiState.asStateFlow()
+    private val repository: QuoteRepository
 
     init {
-        loadFavourites()
+        // Initialize the DB and Repository
+        val database = AppDatabase.getDatabase(application)
+        repository = QuoteRepository(database.favoriteDao())
     }
 
-    // Simulate fetching from a database/API
-    fun loadFavourites() {
+    // Expose the list of favorites directly from the DB as a StateFlow
+    val favorites: StateFlow<List<FavoriteQuote>> = repository.getAllFavorites()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    fun removeFavorite(favorite: FavoriteQuote) {
         viewModelScope.launch {
-            _uiState.value = FavouriteUiState.Loading
-            try {
-                // TODO: Replace with actual Repository call, e.g., repository.getAllFavourites()
-                delay(1000) // Simulating network/database delay
-
-                // simulating fetching data
-                val fetchedItems = listOf(
-                    FavouriteItem(
-                        "1",
-                        "Home",
-                        "123, Green Street, Bihar",
-                        System.currentTimeMillis()
-                    ),
-                    FavouriteItem("2", "Office", "Invyu Tech Park, Sector 5", System.currentTimeMillis()),
-                    FavouriteItem("3", "Gym", "Gold's Gym, Main Road", System.currentTimeMillis())
-                )
-
-                if (fetchedItems.isEmpty()) {
-                    _uiState.value = FavouriteUiState.Empty
-                } else {
-                    _uiState.value = FavouriteUiState.Success(fetchedItems)
-                }
-            } catch (e: Exception) {
-                _uiState.value = FavouriteUiState.Error("Failed to load favourites")
-            }
-        }
-    }
-
-    fun removeFavourite(item: FavouriteItem) {
-        viewModelScope.launch {
-            // TODO: Call Repository to delete from DB: repository.delete(item.id)
-
-            // Optimistically update UI
-            val currentState = _uiState.value
-            if (currentState is FavouriteUiState.Success) {
-                val updatedList = currentState.items.filter { it.id != item.id }
-                if (updatedList.isEmpty()) {
-                    _uiState.value = FavouriteUiState.Empty
-                } else {
-                    _uiState.value = FavouriteUiState.Success(updatedList)
-                }
-            }
+            // Logic to remove from DB. Since existing repository uses 'toggle' logic based on Quote object:
+            val quote = Quote(text = favorite.text, author = favorite.author)
+            // Passing isFavorite=true forces the toggle logic to remove it
+            repository.toggleFavorite(quote, isFavorite = true)
         }
     }
 }

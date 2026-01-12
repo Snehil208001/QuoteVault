@@ -55,7 +55,7 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.SpaceBetween, // Keeps date aligned left
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
@@ -73,20 +73,7 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                     color = TextPrimary
                 )
             }
-
-            IconButton(
-                onClick = { /* Settings */ },
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color.Transparent)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Settings,
-                    contentDescription = "Settings",
-                    tint = TextPrimary
-                )
-            }
+            // Removed Settings Icon Button here
         }
 
         // 2. Main Content Area

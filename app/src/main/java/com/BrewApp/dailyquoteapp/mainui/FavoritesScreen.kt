@@ -1,75 +1,63 @@
+package com.BrewApp.dailyquoteapp.mainui
+
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.rounded.FormatQuote
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.BrewApp.dailyquoteapp.data.model.FavouriteItem
-import com.BrewApp.dailyquoteapp.data.model.FavouriteUiState
+import com.BrewApp.dailyquoteapp.data.db.FavoriteQuote
+import com.BrewApp.dailyquoteapp.ui.theme.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavouriteScreen(
     onBackClick: () -> Unit,
-    onItemClick: (FavouriteItem) -> Unit, // Navigate to details/map
+    onItemClick: (FavoriteQuote) -> Unit,
     viewModel: FavouriteViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val favorites by viewModel.favorites.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("My Favourites") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            when (val state = uiState) {
-                is FavouriteUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-                is FavouriteUiState.Empty -> {
-                    EmptyStateView()
-                }
-                is FavouriteUiState.Error -> {
-                    Text(
-                        text = state.message,
-                        color = Color.Red,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                is FavouriteUiState.Success -> {
-                    FavouriteList(
-                        items = state.items,
-                        onItemClick = onItemClick,
-                        onDeleteClick = { viewModel.removeFavourite(it) }
+    // 1. Force BackgroundCream to match HomeScreen exactly
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundCream) // Use the same Cream background as Home
+            .statusBarsPadding()
+    ) {
+        // --- Header Section ---
+        FavoritesHeader(onBackClick)
+
+        // --- Content Section ---
+        if (favorites.isEmpty()) {
+            EmptyStateView()
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(top = 16.dp, start = 24.dp, end = 24.dp, bottom = 100.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(favorites, key = { it.id }) { quote ->
+                    FavoriteQuoteCard(
+                        quote = quote,
+                        onDelete = { viewModel.removeFavorite(quote) }
                     )
                 }
             }
@@ -78,100 +66,144 @@ fun FavouriteScreen(
 }
 
 @Composable
-fun FavouriteList(
-    items: List<FavouriteItem>,
-    onItemClick: (FavouriteItem) -> Unit,
-    onDeleteClick: (FavouriteItem) -> Unit
-) {
-    LazyColumn(
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(items, key = { it.id }) { item ->
-            FavouriteItemRow(item, onItemClick, onDeleteClick)
-        }
-    }
-}
-
-@Composable
-fun FavouriteItemRow(
-    item: FavouriteItem,
-    onClick: (FavouriteItem) -> Unit,
-    onDelete: (FavouriteItem) -> Unit
-) {
-    Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+fun FavoritesHeader(onBackClick: () -> Unit) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick(item) }
+            .padding(horizontal = 24.dp, vertical = 24.dp), // Matched Home padding
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        // Back Button (Styled like Home buttons - White Circle)
+        IconButton(
+            onClick = onBackClick,
             modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(SurfaceLight) // White background
         ) {
-            // Icon and Text
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Go back",
+                tint = TextPrimary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        // Title
+        Text(
+            text = "My Favorites",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary,
+            letterSpacing = 0.5.sp
+        )
+    }
+}
+
+@Composable
+fun FavoriteQuoteCard(
+    quote: FavoriteQuote,
+    onDelete: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp), // Soft roundness like Home
+        colors = CardDefaults.cardColors(
+            containerColor = SurfaceLight // White Card
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(modifier = Modifier.padding(24.dp)) {
+
+            // Delete Button (Top Right)
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 12.dp, y = (-12).dp)
+            ) {
                 Icon(
-                    imageVector = Icons.Default.Favorite,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
+                    imageVector = Icons.Outlined.Delete,
+                    contentDescription = "Delete quote",
+                    tint = TextMuted.copy(alpha = 0.7f),
+                    modifier = Modifier.size(20.dp)
                 )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text(
-                        text = item.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = item.address,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
             }
 
-            // Delete Button
-            IconButton(onClick = { onDelete(item) }) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+
+                // Quote Icon
                 Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Remove",
-                    tint = Color.Gray
+                    imageVector = Icons.Rounded.FormatQuote,
+                    contentDescription = null,
+                    tint = PrimaryBlue.copy(alpha = 0.2f),
+                    modifier = Modifier.size(32.dp)
                 )
+
+                // Quote Text - Using Serif to match Home
+                Text(
+                    text = "\"${quote.text}\"",
+                    fontFamily = FontFamily.Serif, // Match Home Font
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = 28.sp,
+                    color = TextPrimary
+                )
+
+                // Footer: Author
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Small Blue Line like Home
+                    Box(
+                        modifier = Modifier
+                            .width(24.dp)
+                            .height(2.dp)
+                            .background(PrimaryBlue.copy(alpha = 0.3f))
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Text(
+                        text = quote.author,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextSecondary
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun BoxScope.EmptyStateView() {
+fun EmptyStateView() {
     Column(
-        modifier = Modifier.align(Alignment.Center),
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
-            imageVector = Icons.Default.Favorite,
+            imageVector = Icons.Rounded.FormatQuote,
             contentDescription = null,
-            tint = Color.LightGray,
+            tint = TextMuted.copy(alpha = 0.3f),
             modifier = Modifier.size(80.dp)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "No Favourites Yet",
-            style = MaterialTheme.typography.titleLarge,
-            color = Color.Gray
+            text = "No Favorites Yet",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = TextSecondary
         )
         Text(
-            text = "Save your frequent spots for quick access.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.LightGray,
-            textAlign = TextAlign.Center
+            text = "Save quotes from the Home screen to see them here.",
+            fontSize = 14.sp,
+            color = TextMuted,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 32.dp, vertical = 8.dp)
         )
     }
 }
