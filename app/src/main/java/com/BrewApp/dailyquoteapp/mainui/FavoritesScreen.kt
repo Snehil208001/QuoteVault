@@ -1,175 +1,177 @@
-package com.BrewApp.dailyquoteapp.mainui
-
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.FormatQuote
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.BrewApp.dailyquoteapp.ui.theme.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.BrewApp.dailyquoteapp.data.model.FavouriteItem
+import com.BrewApp.dailyquoteapp.data.model.FavouriteUiState
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FavoritesScreen(
-    onNavigateBack: () -> Unit
+fun FavouriteScreen(
+    onBackClick: () -> Unit,
+    onItemClick: (FavouriteItem) -> Unit, // Navigate to details/map
+    viewModel: FavouriteViewModel = viewModel()
 ) {
-    // Dummy Data
-    val favoriteQuotes = listOf(
-        DailyQuote("The only way to do great work is to love what you do.", "Steve Jobs"),
-        DailyQuote("Simplicity is the ultimate sophistication.", "Leonardo da Vinci"),
-        DailyQuote("Stay hungry, stay foolish.", "Steve Jobs"),
-        DailyQuote("Be the change that you wish to see in the world.", "Mahatma Gandhi"),
-        DailyQuote("To live is the rarest thing in the world. Most people exist, that is all.", "Oscar Wilde")
-    )
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
-        containerColor = BackgroundLightBlue, // The light pastel blue
         topBar = {
-            FavoritesTopBar(onBack = onNavigateBack)
+            TopAppBar(
+                title = { Text("My Favourites") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
         }
     ) { paddingValues ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(bottom = 24.dp, top = 16.dp)
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            items(favoriteQuotes) { quote ->
-                FavoriteQuoteCard(quote)
-            }
-        }
-    }
-}
-
-@Composable
-fun FavoritesTopBar(onBack: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Back Button
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color.Transparent)
-        ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = TextPrimary,
-                modifier = Modifier.size(28.dp)
-            )
-        }
-
-        // Title
-        Text(
-            text = "Favorites",
-            style = MaterialTheme.typography.titleLarge,
-            color = TextPrimary,
-            fontWeight = FontWeight.SemiBold
-        )
-
-        // More Button
-        IconButton(
-            onClick = { /* TODO */ },
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color.Transparent)
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.MoreHoriz,
-                contentDescription = "More",
-                tint = TextPrimary
-            )
-        }
-    }
-}
-
-@Composable
-fun FavoriteQuoteCard(quote: DailyQuote) {
-    Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = SurfaceLight // White card
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Box(modifier = Modifier.padding(24.dp)) {
-            // Delete Icon (Top Right)
-            IconButton(
-                onClick = { /* Delete logic */ },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 12.dp, y = (-12).dp)
-                    .size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Delete,
-                    contentDescription = "Delete",
-                    tint = TextMuted,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Quote Icon
-                Icon(
-                    imageVector = Icons.Default.FormatQuote,
-                    contentDescription = null,
-                    tint = PrimaryBlue.copy(alpha = 0.2f),
-                    modifier = Modifier.size(36.dp)
-                )
-
-                // Text
-                Text(
-                    text = "\"${quote.text}\"",
-                    style = MaterialTheme.typography.headlineMedium, // Playfair font
-                    color = TextPrimary
-                )
-
-                // Divider and Author
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(32.dp)
-                            .height(1.dp)
-                            .background(BorderLight)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
+            when (val state = uiState) {
+                is FavouriteUiState.Loading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+                is FavouriteUiState.Empty -> {
+                    EmptyStateView()
+                }
+                is FavouriteUiState.Error -> {
                     Text(
-                        text = quote.author.uppercase(),
-                        style = MaterialTheme.typography.labelMedium, // Inter font
-                        color = TextMuted,
-                        letterSpacing = 1.sp
+                        text = state.message,
+                        color = Color.Red,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                is FavouriteUiState.Success -> {
+                    FavouriteList(
+                        items = state.items,
+                        onItemClick = onItemClick,
+                        onDeleteClick = { viewModel.removeFavourite(it) }
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+fun FavouriteList(
+    items: List<FavouriteItem>,
+    onItemClick: (FavouriteItem) -> Unit,
+    onDeleteClick: (FavouriteItem) -> Unit
+) {
+    LazyColumn(
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(items, key = { it.id }) { item ->
+            FavouriteItemRow(item, onItemClick, onDeleteClick)
+        }
+    }
+}
+
+@Composable
+fun FavouriteItemRow(
+    item: FavouriteItem,
+    onClick: (FavouriteItem) -> Unit,
+    onDelete: (FavouriteItem) -> Unit
+) {
+    Card(
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick(item) }
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Icon and Text
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                Icon(
+                    imageVector = Icons.Default.Favorite,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = item.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = item.address,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+            }
+
+            // Delete Button
+            IconButton(onClick = { onDelete(item) }) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Remove",
+                    tint = Color.Gray
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun BoxScope.EmptyStateView() {
+    Column(
+        modifier = Modifier.align(Alignment.Center),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Default.Favorite,
+            contentDescription = null,
+            tint = Color.LightGray,
+            modifier = Modifier.size(80.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "No Favourites Yet",
+            style = MaterialTheme.typography.titleLarge,
+            color = Color.Gray
+        )
+        Text(
+            text = "Save your frequent spots for quick access.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.LightGray,
+            textAlign = TextAlign.Center
+        )
     }
 }
