@@ -1,9 +1,12 @@
 package com.BrewApp.dailyquoteapp.data.auth
 
-
 import android.util.Log
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.builtin.Email
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 
 class AuthManager {
     private val supabase = SupabaseClient.client
@@ -28,12 +31,28 @@ class AuthManager {
         }
     }
 
-    // Sign up with email and password
-    suspend fun signUp(email: String, password: String): AuthResult {
+    // Get current user full name
+    suspend fun getCurrentUserName(): String? {
         return try {
+            val user = supabase.auth.currentUserOrNull()
+            // Retrieve 'full_name' from user metadata
+            user?.userMetadata?.get("full_name")?.jsonPrimitive?.contentOrNull
+        } catch (e: Exception) {
+            Log.e("AuthManager", "Error getting user name", e)
+            null
+        }
+    }
+
+    // Sign up with email, password, and full name
+    suspend fun signUp(email: String, password: String, fullName: String): AuthResult {
+        return try {
+            val userMetadata = buildJsonObject {
+                put("full_name", fullName)
+            }
             supabase.auth.signUpWith(Email) {
                 this.email = email
                 this.password = password
+                this.data = userMetadata
             }
             AuthResult.Success
         } catch (e: Exception) {

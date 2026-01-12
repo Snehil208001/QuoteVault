@@ -18,9 +18,15 @@ class ProfileViewModel : ViewModel() {
     private val _userEmail = MutableStateFlow<String?>(null)
     val userEmail: StateFlow<String?> = _userEmail.asStateFlow()
 
+    // Added State for Full Name
+    private val _fullName = MutableStateFlow<String?>(null)
+    val fullName: StateFlow<String?> = _fullName.asStateFlow()
+
     fun loadUserData() {
         viewModelScope.launch {
             _userEmail.value = authManager.getCurrentUserEmail()
+            // Fetch and set full name
+            _fullName.value = authManager.getCurrentUserName()
         }
     }
 

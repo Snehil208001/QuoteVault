@@ -49,7 +49,8 @@ class SignUpViewModel : ViewModel() {
 
         viewModelScope.launch {
             _signUpState.value = SignUpState.Loading
-            when (val result = authManager.signUp(_email.value, _password.value)) {
+            // Updated to pass fullName
+            when (val result = authManager.signUp(_email.value, _password.value, _fullName.value)) {
                 is AuthResult.Success -> {
                     _signUpState.value = SignUpState.Success
                 }

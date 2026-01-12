@@ -18,7 +18,7 @@ import com.BrewApp.dailyquoteapp.mainui.profilescreen.ui.ProfileScreen
 import com.BrewApp.dailyquoteapp.mainui.signupscreen.ui.SignUpScreen
 
 @Composable
-fun AppNavGraph() {
+fun AppNavGraph(startDestination: String = Screens.Login.route) {
     val navController = rememberNavController()
 
     // Determine when to show the Bottom Bar
@@ -40,7 +40,7 @@ fun AppNavGraph() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screens.Login.route,
+            startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)
         ) {
             // --- Authentication Screens ---

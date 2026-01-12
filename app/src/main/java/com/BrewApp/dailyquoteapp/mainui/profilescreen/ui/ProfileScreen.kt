@@ -78,6 +78,7 @@ fun ProfileScreen(
 ) {
     val profileState by viewModel.profileState.collectAsState()
     val userEmail by viewModel.userEmail.collectAsState()
+    val fullName by viewModel.fullName.collectAsState() // Observe Name
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Load user data when screen appears
@@ -204,7 +205,7 @@ fun ProfileScreen(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = "Jane Doe",
+                        text = fullName ?: "User", // Dynamic Name
                         fontFamily = PlayfairFont,
                         fontSize = 30.sp,
                         fontWeight = FontWeight.Bold,
