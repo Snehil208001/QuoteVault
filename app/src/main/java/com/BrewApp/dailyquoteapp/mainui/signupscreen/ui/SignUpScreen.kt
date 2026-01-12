@@ -25,13 +25,18 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +54,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.BrewApp.dailyquoteapp.mainui.signupscreen.viewmodel.SignUpState
+import com.BrewApp.dailyquoteapp.mainui.signupscreen.viewmodel.SignUpViewModel
 import com.BrewApp.dailyquoteapp.ui.theme.InterFont
 import com.BrewApp.dailyquoteapp.ui.theme.PlayfairFont
 import com.BrewApp.dailyquoteapp.ui.theme.PrimaryBlue
@@ -64,21 +72,40 @@ private val InputPlaceholder = Color(0xFF93ADC8)
 fun SignUpScreen(
     onBackClick: () -> Unit,
     onLoginClick: () -> Unit,
-    onSignUpSubmit: () -> Unit
+    onSignUpSubmit: () -> Unit,
+    viewModel: SignUpViewModel = viewModel()
 ) {
-    var fullName by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val signUpState by viewModel.signUpState.collectAsState()
+    val fullName by viewModel.fullName.collectAsState()
+    val email by viewModel.email.collectAsState()
+    val password by viewModel.password.collectAsState()
     var passwordVisible by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Handle signup state changes
+    LaunchedEffect(signUpState) {
+        when (signUpState) {
+            is SignUpState.Success -> {
+                onSignUpSubmit()
+                viewModel.resetState()
+            }
+            is SignUpState.Error -> {
+                snackbarHostState.showSnackbar((signUpState as SignUpState.Error).message)
+                viewModel.resetState()
+            }
+            else -> {}
+        }
+    }
 
     Scaffold(
         containerColor = BackgroundLight,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             // Header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(BackgroundLight.copy(alpha = 0.9f)) // Backdrop blur simulation
+                    .background(BackgroundLight.copy(alpha = 0.9f))
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -107,13 +134,15 @@ fun SignUpScreen(
         ) {
             // Limits width for larger screens (max-w-md)
             Column(
-                modifier = Modifier.width(448.dp), // max-w-md approx
+                modifier = Modifier.width(448.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // 1. Headline Section
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 32.dp)
                 ) {
                     Text(
                         text = "Begin your journey",
@@ -143,38 +172,41 @@ fun SignUpScreen(
                     // Full Name
                     SignUpTextField(
                         value = fullName,
-                        onValueChange = { fullName = it },
+                        onValueChange = { viewModel.updateFullName(it) },
                         label = "Full Name",
                         placeholder = "Jane Doe",
-                        keyboardType = KeyboardType.Text
+                        keyboardType = KeyboardType.Text,
+                        enabled = signUpState != SignUpState.Loading
                     )
 
                     // Email Address
                     SignUpTextField(
                         value = email,
-                        onValueChange = { email = it },
+                        onValueChange = { viewModel.updateEmail(it) },
                         label = "Email Address",
                         placeholder = "jane@example.com",
-                        keyboardType = KeyboardType.Email
+                        keyboardType = KeyboardType.Email,
+                        enabled = signUpState != SignUpState.Loading
                     )
 
                     // Password
                     SignUpTextField(
                         value = password,
-                        onValueChange = { password = it },
+                        onValueChange = { viewModel.updatePassword(it) },
                         label = "Password",
                         placeholder = "••••••••",
                         keyboardType = KeyboardType.Password,
                         isPassword = true,
                         isPasswordVisible = passwordVisible,
-                        onVisibilityChange = { passwordVisible = !passwordVisible }
+                        onVisibilityChange = { passwordVisible = !passwordVisible },
+                        enabled = signUpState != SignUpState.Loading
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Submit Button
                     Button(
-                        onClick = onSignUpSubmit,
+                        onClick = { viewModel.signUp() },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
@@ -186,15 +218,23 @@ fun SignUpScreen(
                         elevation = ButtonDefaults.buttonElevation(
                             defaultElevation = 6.dp,
                             pressedElevation = 2.dp
-                        )
+                        ),
+                        enabled = signUpState != SignUpState.Loading
                     ) {
-                        Text(
-                            text = "Create Account",
-                            fontFamily = InterFont,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.2.sp
-                        )
+                        if (signUpState == SignUpState.Loading) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        } else {
+                            Text(
+                                text = "Create Account",
+                                fontFamily = InterFont,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.2.sp
+                            )
+                        }
                     }
 
                     // Footer Link
@@ -239,7 +279,8 @@ private fun SignUpTextField(
     keyboardType: KeyboardType,
     isPassword: Boolean = false,
     isPasswordVisible: Boolean = false,
-    onVisibilityChange: () -> Unit = {}
+    onVisibilityChange: () -> Unit = {},
+    enabled: Boolean = true
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -292,7 +333,8 @@ private fun SignUpTextField(
                 focusedTextColor = TextDark,
                 unfocusedTextColor = TextDark,
                 cursorColor = PrimaryBlue
-            )
+            ),
+            enabled = enabled
         )
     }
 }

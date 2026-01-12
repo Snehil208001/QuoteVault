@@ -15,7 +15,7 @@ activityCompose = "1.9.3"
 # -- Compose --
 composeBom = "2024.11.00"
 navigationCompose = "2.8.5"
-uiTextGoogleFonts = "1.7.6" # <--- ADDED VERSION
+uiTextGoogleFonts = "1.7.6"
 
 # -- Room --
 room = "2.6.1"
@@ -23,6 +23,10 @@ room = "2.6.1"
 # -- Network (Gson + Retrofit) --
 gson = "2.10.1"
 retrofit = "2.9.0"
+
+# -- Supabase --
+supabase = "2.0.0"
+ktor = "2.3.7"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -42,7 +46,7 @@ androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-man
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
-androidx-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts", version.ref = "uiTextGoogleFonts" } # <--- ADDED LIBRARY
+androidx-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts", version.ref = "uiTextGoogleFonts" }
 
 # Room
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
@@ -56,6 +60,11 @@ google-gson = { group = "com.google.code.gson", name = "gson", version.ref = "gs
 retrofit-core = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
 androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
+
+# Supabase
+supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt", version.ref = "supabase" }
+supabase-gotrue = { group = "io.github.jan-tennert.supabase", name = "gotrue-kt", version.ref = "supabase" }
+ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version.ref = "ktor" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -27,12 +27,19 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +49,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.BrewApp.dailyquoteapp.mainui.profilescreen.viewmodel.ProfileState
+import com.BrewApp.dailyquoteapp.mainui.profilescreen.viewmodel.ProfileViewModel
 import com.BrewApp.dailyquoteapp.ui.theme.InterFont
 import com.BrewApp.dailyquoteapp.ui.theme.PlayfairFont
 import com.BrewApp.dailyquoteapp.ui.theme.PrimaryBlue
@@ -51,7 +61,7 @@ private val CreamBg = Color(0xFFFDFCF5)
 private val CreamSurface = Color(0xFFF7F5EB)
 private val TextPrimary = Color(0xFF1F2937)
 private val TextSecondary = Color(0xFF6B7280)
-private val BorderColor = Color(0xFFE7E5E4) // Stone-200 equivalent
+private val BorderColor = Color(0xFFE7E5E4)
 private val RedText = Color(0xFFEF4444)
 private val RedBgHover = Color(0xFFFEF2F2)
 private val RedBorderHover = Color(0xFFFEE2E2)
@@ -63,10 +73,36 @@ fun ProfileScreen(
     onSettingsClick: () -> Unit,
     onNotificationsClick: () -> Unit,
     onPreferencesClick: () -> Unit,
-    onLogoutClick: () -> Unit
+    onLogoutClick: () -> Unit,
+    viewModel: ProfileViewModel = viewModel()
 ) {
+    val profileState by viewModel.profileState.collectAsState()
+    val userEmail by viewModel.userEmail.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Load user data when screen appears
+    LaunchedEffect(Unit) {
+        viewModel.loadUserData()
+    }
+
+    // Handle profile state changes
+    LaunchedEffect(profileState) {
+        when (profileState) {
+            is ProfileState.LogoutSuccess -> {
+                onLogoutClick()
+                viewModel.resetState()
+            }
+            is ProfileState.Error -> {
+                snackbarHostState.showSnackbar((profileState as ProfileState.Error).message)
+                viewModel.resetState()
+            }
+            else -> {}
+        }
+    }
+
     Scaffold(
         containerColor = CreamBg,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             // Sticky Top Bar
             Row(
@@ -97,7 +133,7 @@ fun ProfileScreen(
                     color = TextPrimary,
                     modifier = Modifier
                         .weight(1f)
-                        .padding(end = 40.dp), // Balance the title to center
+                        .padding(end = 40.dp),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
@@ -114,7 +150,7 @@ fun ProfileScreen(
             // Max width constraint for larger screens
             Column(
                 modifier = Modifier
-                    .width(448.dp) // max-w-md
+                    .width(448.dp)
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -133,7 +169,6 @@ fun ProfileScreen(
                             .clip(CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        // Using Icon as placeholder for "https://lh3.googleusercontent.com/aida-public/AB6AXuDQwgOrJDtiXd5FlplFhNeHI0grHZrCoN2-uk3KZ2d5NoDzBHG7e60y8cOAxdRwg3S7xbuEenzTNQeq9oQH5VcZWSBCb-EDO55Oj_tkAkJk9MsFZlbiMRpQ61W5YHLm04r99TYzvBr_70enhLeckemTfg9kPspLWGWyHaeHka9GWIeMlBfpSjFDg1YofW5MTxUC3ue_tMGc58fLyNitACPLSbLCsjoW-1OIdT_4Jb0VAMGaf5pxP_rnMu4g_hmoBxjTiptWVfumVqQi"
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = "Profile Picture",
@@ -177,7 +212,7 @@ fun ProfileScreen(
                         letterSpacing = (-0.5).sp
                     )
                     Text(
-                        text = "jane.doe@example.com",
+                        text = userEmail ?: "Loading...",
                         fontFamily = InterFont,
                         fontSize = 16.sp,
                         color = TextSecondary
@@ -231,7 +266,11 @@ fun ProfileScreen(
 
                 // 4. Logout Button
                 Surface(
-                    onClick = onLogoutClick,
+                    onClick = {
+                        if (profileState != ProfileState.Loading) {
+                            viewModel.logout()
+                        }
+                    },
                     shape = RoundedCornerShape(50),
                     color = Color.White,
                     border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor),
@@ -245,21 +284,28 @@ fun ProfileScreen(
                         horizontalArrangement = Arrangement.Center,
                         modifier = Modifier.padding(horizontal = 20.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.Logout,
-                            contentDescription = null,
-                            tint = RedText,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Log Out",
-                            fontFamily = InterFont,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = RedText,
-                            letterSpacing = 0.5.sp
-                        )
+                        if (profileState == ProfileState.Loading) {
+                            CircularProgressIndicator(
+                                color = RedText,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.Logout,
+                                contentDescription = null,
+                                tint = RedText,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Log Out",
+                                fontFamily = InterFont,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = RedText,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
                     }
                 }
 
@@ -322,7 +368,7 @@ private fun ProfileMenuItem(
         onClick = onClick,
         color = Color.White,
         shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF3F4F6)), // Stone-100
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF3F4F6)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -333,7 +379,7 @@ private fun ProfileMenuItem(
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp)), // Blue-50
+                    .background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -360,7 +406,7 @@ private fun ProfileMenuItem(
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = Color(0xFF9CA3AF) // Gray-400
+                tint = Color(0xFF9CA3AF)
             )
         }
     }

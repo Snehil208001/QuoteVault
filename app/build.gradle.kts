@@ -63,7 +63,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
 
     // Google Fonts Dependency
-    implementation(libs.androidx.ui.text.google.fonts) // <--- ADDED IMPLEMENTATION
+    implementation(libs.androidx.ui.text.google.fonts)
 
     // Room
     implementation(libs.androidx.room.runtime)
@@ -75,6 +75,11 @@ dependencies {
     implementation(libs.google.gson)
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.gson)
+
+    // Supabase
+    implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.gotrue)
+    implementation(libs.ktor.client.android)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
