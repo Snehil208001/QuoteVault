@@ -7,8 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.BrewApp.dailyquoteapp.mainui.FavouriteScreen
-import com.BrewApp.dailyquoteapp.mainui.HomeScreen
+import com.BrewApp.dailyquoteapp.mainui.favouritescreen.ui.FavouriteScreen
+import com.BrewApp.dailyquoteapp.mainui.homescreen.ui.HomeScreen
 import com.BrewApp.dailyquoteapp.mainui.components.AppBottomNavBar
 
 @Composable

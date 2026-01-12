@@ -1,4 +1,4 @@
-package com.BrewApp.dailyquoteapp.mainui
+package com.BrewApp.dailyquoteapp.mainui.favouritescreen.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -18,7 +18,7 @@ class FavouriteViewModel(application: Application) : AndroidViewModel(applicatio
 
     init {
         // Initialize the DB and Repository
-        val database = AppDatabase.getDatabase(application)
+        val database = AppDatabase.Companion.getDatabase(application)
         repository = QuoteRepository(database.favoriteDao())
     }
 
@@ -26,7 +26,7 @@ class FavouriteViewModel(application: Application) : AndroidViewModel(applicatio
     val favorites: StateFlow<List<FavoriteQuote>> = repository.getAllFavorites()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.Companion.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 

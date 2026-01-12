@@ -1,4 +1,4 @@
-package com.BrewApp.dailyquoteapp.mainui
+package com.BrewApp.dailyquoteapp.mainui.homescreen.ui
 
 import android.content.Intent
 import androidx.compose.foundation.background
@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.BrewApp.dailyquoteapp.mainui.homescreen.viewmodel.HomeViewModel
 import com.BrewApp.dailyquoteapp.ui.theme.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -167,9 +168,9 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                 isPrimary = false,
                 onClick = {
                     val sendIntent = Intent().apply {
-                        action = Intent.ACTION_SEND
+                        Intent.setAction = Intent.ACTION_SEND
                         putExtra(Intent.EXTRA_TEXT, "\"${currentQuote.text}\" - ${currentQuote.author}\n\nVia Daily Quotes App")
-                        type = "text/plain"
+                        Intent.setType = "text/plain"
                     }
                     val shareIntent = Intent.createChooser(sendIntent, null)
                     context.startActivity(shareIntent)

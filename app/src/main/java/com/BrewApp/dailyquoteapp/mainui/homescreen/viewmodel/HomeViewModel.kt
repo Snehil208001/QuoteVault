@@ -1,4 +1,4 @@
-package com.BrewApp.dailyquoteapp.mainui
+package com.BrewApp.dailyquoteapp.mainui.homescreen.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -7,13 +7,18 @@ import com.BrewApp.dailyquoteapp.data.db.AppDatabase
 import com.BrewApp.dailyquoteapp.data.model.Quote
 import com.BrewApp.dailyquoteapp.data.repository.QuoteRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     // Setup DB and Repository
-    private val database = AppDatabase.getDatabase(application)
+    private val database = AppDatabase.Companion.getDatabase(application)
     private val repository = QuoteRepository(database.favoriteDao())
 
     // Buffer for quotes to avoid hitting API too often
@@ -28,7 +33,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     @OptIn(ExperimentalCoroutinesApi::class)
     val isFavorite: StateFlow<Boolean> = _currentQuote
         .flatMapLatest { quote -> repository.isQuoteFavorite(quote.text) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+        .stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), false)
 
     // 3. Loading State
     private val _isLoading = MutableStateFlow(true)
