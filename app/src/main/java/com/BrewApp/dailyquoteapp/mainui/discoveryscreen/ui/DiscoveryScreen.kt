@@ -194,16 +194,6 @@ fun DiscoveryScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(text = "No quotes found", color = TextSecondary)
-
-                        // --- ADDED BUTTON FOR SEEDING ---
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = { viewModel.seedData() },
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                        ) {
-                            Text("Initialize Database Data")
-                        }
-                        // ---------------------------------
                     }
                 } else {
                     LazyColumn(
@@ -211,7 +201,7 @@ fun DiscoveryScreen(
                         verticalArrangement = Arrangement.spacedBy(20.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        items(quotes) { quote ->
+                        items(quotes, key = { it.id }) { quote ->
                             DiscoveryQuoteCard(quote = quote)
                         }
                     }
