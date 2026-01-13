@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.BrewApp.dailyquoteapp.data.db.AppDatabase
+import com.BrewApp.dailyquoteapp.data.local.PreferencesManager
 import com.BrewApp.dailyquoteapp.data.model.Quote
 import com.BrewApp.dailyquoteapp.data.repository.QuoteRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,13 +18,10 @@ import kotlinx.coroutines.launch
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
-    // Setup DB and Repository
-    private val database = AppDatabase.Companion.getDatabase(application)
+    // Setup DB, Repository and Prefs
+    private val database = AppDatabase.getDatabase(application)
     private val repository = QuoteRepository(database.favoriteDao())
-
-    // Buffer for quotes to avoid hitting API too often
-    private var quoteBuffer: List<Quote> = emptyList()
-    private var currentIndex = 0
+    private val prefs = PreferencesManager(application)
 
     // 1. Current Quote displayed
     private val _currentQuote = MutableStateFlow(Quote("Loading...", "Please wait"))
@@ -33,35 +31,55 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     @OptIn(ExperimentalCoroutinesApi::class)
     val isFavorite: StateFlow<Boolean> = _currentQuote
         .flatMapLatest { quote -> repository.isQuoteFavorite(quote.text) }
-        .stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), false)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     // 3. Loading State
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     init {
-        fetchQuotes()
+        loadDailyQuote()
     }
 
-    fun fetchQuotes() {
+    private fun loadDailyQuote() {
         viewModelScope.launch {
             _isLoading.value = true
-            val fetchedQuotes = repository.fetchRandomQuotes()
-            if (fetchedQuotes.isNotEmpty()) {
-                quoteBuffer = fetchedQuotes
-                currentIndex = 0
-                _currentQuote.value = quoteBuffer[currentIndex]
+
+            // Check if we have a quote for today stored locally
+            if (prefs.isQuoteFromToday()) {
+                val storedQuote = prefs.getDailyQuote()
+                if (storedQuote != null) {
+                    _currentQuote.value = storedQuote
+                    _isLoading.value = false
+                    return@launch
+                }
+            }
+
+            // If not today (or first run), fetch from API
+            try {
+                val fetchedQuotes = repository.fetchRandomQuotes()
+                if (fetchedQuotes.isNotEmpty()) {
+                    val newDailyQuote = fetchedQuotes.first()
+                    // Save as today's quote
+                    prefs.saveDailyQuote(newDailyQuote)
+                    _currentQuote.value = newDailyQuote
+                }
+            } catch (e: Exception) {
+                // Keep loading or show error state if needed
             }
             _isLoading.value = false
         }
     }
 
+    // Manual refresh for the user (optional, overrides the daily rule temporarily)
     fun getNextQuote() {
-        if (quoteBuffer.isNotEmpty()) {
-            currentIndex = (currentIndex + 1) % quoteBuffer.size
-            _currentQuote.value = quoteBuffer[currentIndex]
-        } else {
-            fetchQuotes()
+        viewModelScope.launch {
+            _isLoading.value = true
+            val fetchedQuotes = repository.fetchRandomQuotes()
+            if (fetchedQuotes.isNotEmpty()) {
+                _currentQuote.value = fetchedQuotes.first()
+            }
+            _isLoading.value = false
         }
     }
 

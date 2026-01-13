@@ -15,6 +15,7 @@ import com.BrewApp.dailyquoteapp.mainui.favouritescreen.ui.FavouriteScreen
 import com.BrewApp.dailyquoteapp.mainui.homescreen.ui.HomeScreen
 import com.BrewApp.dailyquoteapp.mainui.loginscreen.ui.LoginScreen
 import com.BrewApp.dailyquoteapp.mainui.loginscreen.ui.NewPasswordScreen
+import com.BrewApp.dailyquoteapp.mainui.preferences.ui.QuotePreferencesScreen
 import com.BrewApp.dailyquoteapp.mainui.profilescreen.ui.ProfileScreen
 import com.BrewApp.dailyquoteapp.mainui.signupscreen.ui.SignUpScreen
 
@@ -78,7 +79,7 @@ fun AppNavGraph(startDestination: String = Screens.Login.route) {
                 )
             }
 
-            // NEW: Password Reset Screen
+            // Password Reset Screen
             composable(Screens.NewPassword.route) {
                 NewPasswordScreen(
                     onPasswordUpdated = {
@@ -115,12 +116,21 @@ fun AppNavGraph(startDestination: String = Screens.Login.route) {
                     onEditProfileClick = { /* TODO */ },
                     onSettingsClick = { /* TODO */ },
                     onNotificationsClick = { /* TODO */ },
-                    onPreferencesClick = { /* TODO */ },
+                    onPreferencesClick = {
+                        navController.navigate(Screens.Preferences.route)
+                    },
                     onLogoutClick = {
                         navController.navigate(Screens.Login.route) {
                             popUpTo(0) { inclusive = true }
                         }
                     }
+                )
+            }
+
+            // NEW: Quote Preferences Screen
+            composable(Screens.Preferences.route) {
+                QuotePreferencesScreen(
+                    onBackClick = { navController.popBackStack() }
                 )
             }
         }
