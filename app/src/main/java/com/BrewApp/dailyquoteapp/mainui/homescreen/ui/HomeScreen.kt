@@ -1,6 +1,8 @@
 package com.BrewApp.dailyquoteapp.mainui.homescreen.ui
 
 import android.content.Intent
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -25,9 +28,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.BrewApp.dailyquoteapp.mainui.homescreen.viewmodel.HomeViewModel
 import com.BrewApp.dailyquoteapp.ui.theme.*
+import com.BrewApp.dailyquoteapp.util.QuoteStyle
+import com.BrewApp.dailyquoteapp.util.ShareUtils
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -39,6 +45,9 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
     val currentQuote by viewModel.currentQuote.collectAsState()
     val isFavorite by viewModel.isFavorite.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+    // State for Share Dialog
+    var showShareDialog by remember { mutableStateOf(false) }
 
     // Date Logic
     val currentDate = remember { LocalDate.now() }
@@ -56,7 +65,7 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween, // Keeps date aligned left
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
@@ -74,7 +83,6 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                     color = TextPrimary
                 )
             }
-            // Removed Settings Icon Button here
         }
 
         // 2. Main Content Area
@@ -88,7 +96,6 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             if (isLoading) {
                 CircularProgressIndicator(color = PrimaryBlue)
             } else {
-                // Background Quote Mark
                 Text(
                     text = "“",
                     fontSize = 120.sp,
@@ -99,7 +106,6 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                         .offset(x = (-10).dp, y = (-40).dp)
                 )
 
-                // Quote Content
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
@@ -145,7 +151,6 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.Top
         ) {
-            // Refresh Action
             VerticalActionButton(
                 icon = Icons.Outlined.Refresh,
                 label = "New Quote",
@@ -153,7 +158,6 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                 onClick = { viewModel.getNextQuote() }
             )
 
-            // Save/Favorite Action (Connected to DB)
             VerticalActionButton(
                 icon = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                 label = if (isFavorite) "Saved" else "Save",
@@ -161,21 +165,109 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                 onClick = { viewModel.toggleFavorite() }
             )
 
-            // Share Action
             VerticalActionButton(
                 icon = Icons.Outlined.IosShare,
                 label = "Share",
                 isPrimary = false,
-                onClick = {
-                    val sendIntent = Intent().apply {
-                        action = Intent.ACTION_SEND
-                        putExtra(Intent.EXTRA_TEXT, "\"${currentQuote.text}\" - ${currentQuote.author}\n\nVia Daily Quotes App")
-                        type = "text/plain"
-                    }
-                    val shareIntent = Intent.createChooser(sendIntent, null)
-                    context.startActivity(shareIntent)
-                }
+                onClick = { showShareDialog = true } // Open Dialog
             )
+        }
+    }
+
+    // --- Share Dialog ---
+    if (showShareDialog) {
+        ShareQuoteDialog(
+            quote = currentQuote,
+            onDismiss = { showShareDialog = false },
+            onShareText = { ShareUtils.shareText(context, currentQuote) },
+            onSaveImage = { bitmap -> ShareUtils.saveImageToGallery(context, bitmap) },
+            onShareImage = { bitmap -> ShareUtils.shareImage(context, bitmap) }
+        )
+    }
+}
+
+@Composable
+fun ShareQuoteDialog(
+    quote: com.BrewApp.dailyquoteapp.data.model.Quote,
+    onDismiss: () -> Unit,
+    onShareText: () -> Unit,
+    onSaveImage: (Bitmap) -> Unit,
+    onShareImage: (Bitmap) -> Unit
+) {
+    val context = LocalContext.current
+    var selectedStyle by remember { mutableStateOf(QuoteStyle.CLASSIC) }
+
+    // Generate Preview Bitmap whenever style or quote changes
+    val previewBitmap = remember(selectedStyle, quote) {
+        ShareUtils.generateQuoteBitmap(context, quote, selectedStyle)
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("Share Quote", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Preview Image
+                Image(
+                    bitmap = previewBitmap.asImageBitmap(),
+                    contentDescription = "Quote Card Preview",
+                    modifier = Modifier
+                        .size(250.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Style Selector
+                Text("Select Style", fontSize = 14.sp, color = TextSecondary)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    QuoteStyle.values().forEach { style ->
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    when (style) {
+                                        QuoteStyle.CLASSIC -> Color.White
+                                        QuoteStyle.MODERN -> Color(0xFF1E293B)
+                                        QuoteStyle.ARTISTIC -> Color(0xFFFFFDD0)
+                                    }
+                                )
+                                .border(
+                                    width = if (selectedStyle == style) 3.dp else 1.dp,
+                                    color = if (selectedStyle == style) PrimaryBlue else Color.Gray,
+                                    shape = CircleShape
+                                )
+                                .clickable { selectedStyle = style }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Action Buttons
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    Button(onClick = onShareText, colors = ButtonDefaults.buttonColors(containerColor = SurfaceLight, contentColor = TextPrimary)) {
+                        Text("Text")
+                    }
+                    Button(onClick = { onSaveImage(previewBitmap) }, colors = ButtonDefaults.buttonColors(containerColor = SurfaceLight, contentColor = TextPrimary)) {
+                        Text("Save")
+                    }
+                    Button(onClick = { onShareImage(previewBitmap) }, colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)) {
+                        Text("Share")
+                    }
+                }
+            }
         }
     }
 }

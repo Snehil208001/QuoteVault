@@ -4,6 +4,8 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import com.BrewApp.dailyquoteapp.data.local.PreferencesManager
 import java.util.Calendar
@@ -19,6 +21,15 @@ object NotificationScheduler {
 
         val (hour, minute) = prefs.getNotificationTime()
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        // Check for exact alarm permission on Android 12+ (API 31+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (!alarmManager.canScheduleExactAlarms()) {
+                Log.e("NotificationScheduler", "Cannot schedule exact alarms. Permission missing.")
+                return
+            }
+        }
+
         val intent = Intent(context, NotificationReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
@@ -32,6 +43,7 @@ object NotificationScheduler {
             set(Calendar.HOUR_OF_DAY, hour)
             set(Calendar.MINUTE, minute)
             set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
         }
 
         // If time has passed today, schedule for tomorrow
@@ -40,13 +52,15 @@ object NotificationScheduler {
         }
 
         try {
-            alarmManager.setRepeating(
+            // Use setExactAndAllowWhileIdle for reliable delivery even in Doze mode
+            alarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 calendar.timeInMillis,
-                AlarmManager.INTERVAL_DAY,
                 pendingIntent
             )
-            Log.d("NotificationScheduler", "Scheduled for ${calendar.time}")
+            Log.d("NotificationScheduler", "Scheduled exactly for ${calendar.time}")
+        } catch (e: SecurityException) {
+            Log.e("NotificationScheduler", "Security Exception: Permission not granted", e)
         } catch (e: Exception) {
             Log.e("NotificationScheduler", "Error scheduling alarm", e)
         }
@@ -64,6 +78,7 @@ object NotificationScheduler {
 
         if (pendingIntent != null) {
             alarmManager.cancel(pendingIntent)
+            pendingIntent.cancel() // Also cancel the intent itself
             Log.d("NotificationScheduler", "Notification cancelled")
         }
     }

@@ -19,13 +19,16 @@ import kotlinx.coroutines.launch
 class NotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        // 1. Reschedule the next alarm immediately (since we use Exact alarms now)
+        NotificationScheduler.scheduleDailyNotification(context)
+
         val prefs = PreferencesManager(context)
 
-        // Use a Coroutine to fetch data if needed (Note: BroadcastReceiver has short lifecycle, goAsync is better but kept simple here)
+        // Use a Coroutine to fetch data if needed
         val goAsync = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // 1. Get Quote (Reuse today's or fetch new if day changed)
+                // 2. Get Quote (Reuse today's or fetch new if day changed)
                 var quote = prefs.getDailyQuote()
 
                 if (!prefs.isQuoteFromToday()) {
@@ -45,7 +48,7 @@ class NotificationReceiver : BroadcastReceiver() {
                     }
                 }
 
-                // 2. Show Notification
+                // 3. Show Notification
                 showNotification(context, quote!!.text, quote!!.author)
             } finally {
                 goAsync.finish()
@@ -62,7 +65,7 @@ class NotificationReceiver : BroadcastReceiver() {
             val channel = NotificationChannel(
                 channelId,
                 "Daily Quote",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_HIGH // Increased importance
             ).apply {
                 description = "Daily inspirational quotes"
             }
@@ -77,12 +80,14 @@ class NotificationReceiver : BroadcastReceiver() {
             context, 0, intent, PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Use ic_launcher_foreground for the small icon (usually better for notifications)
+        // or ensure mipmap is valid. ic_launcher_foreground is usually a vector/transparent.
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher_round) // Ensure this resource exists
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Quote of the Day")
             .setContentText("\"$title\"")
             .setStyle(NotificationCompat.BigTextStyle().bigText("\"$title\"\n- $message"))
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
