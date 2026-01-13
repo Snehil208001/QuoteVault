@@ -1,11 +1,15 @@
 package com.BrewApp.dailyquoteapp.data.local
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import com.BrewApp.dailyquoteapp.data.model.Quote
+import com.BrewApp.dailyquoteapp.widget.QuoteWidgetProvider
 import java.time.LocalDate
 
-class PreferencesManager(context: Context) {
+class PreferencesManager(private val context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("daily_quote_prefs", Context.MODE_PRIVATE)
 
     companion object {
@@ -31,6 +35,9 @@ class PreferencesManager(context: Context) {
             .putString(KEY_QUOTE_AUTHOR, quote.author)
             .putString(KEY_QUOTE_DATE, today)
             .apply()
+
+        // UPDATE WIDGET: Notify widget provider to refresh data
+        updateWidget()
     }
 
     fun getDailyQuote(): Quote? {
@@ -82,5 +89,15 @@ class PreferencesManager(context: Context) {
 
     fun unregisterListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
         prefs.unregisterOnSharedPreferenceChangeListener(listener)
+    }
+
+    // --- Widget Helper ---
+    private fun updateWidget() {
+        val intent = Intent(context, QuoteWidgetProvider::class.java)
+        intent.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+        val ids = AppWidgetManager.getInstance(context)
+            .getAppWidgetIds(ComponentName(context, QuoteWidgetProvider::class.java))
+        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+        context.sendBroadcast(intent)
     }
 }
