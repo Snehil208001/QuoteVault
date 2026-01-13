@@ -52,6 +52,17 @@ class DiscoveryViewModel : ViewModel() {
         loadQuotes()
     }
 
+    // --- NEW FUNCTION: Triggers the seeder ---
+    fun seedData() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            // Run the seeder to populate Supabase
+            QuoteSeeder.seedDatabase()
+            // Reload the data
+            loadQuotes()
+        }
+    }
+
     private fun loadQuotes() {
         viewModelScope.launch {
             _isLoading.value = true

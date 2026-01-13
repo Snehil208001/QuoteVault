@@ -182,7 +182,7 @@ fun DiscoveryScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(androidx.compose.foundation.rememberScrollState()), // Make it scrollable for pull-to-refresh
+                            .verticalScroll(androidx.compose.foundation.rememberScrollState()),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -194,6 +194,16 @@ fun DiscoveryScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(text = "No quotes found", color = TextSecondary)
+
+                        // --- ADDED BUTTON FOR SEEDING ---
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { viewModel.seedData() },
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                        ) {
+                            Text("Initialize Database Data")
+                        }
+                        // ---------------------------------
                     }
                 } else {
                     LazyColumn(
