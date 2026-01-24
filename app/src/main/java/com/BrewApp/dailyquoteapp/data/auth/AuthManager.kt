@@ -13,12 +13,33 @@ class AuthManager {
     // Access the client via the Singleton
     val supabase = SupabaseClient.client
 
-    // Check if user is logged in
+    // Check if user is logged in (FIXED: Now uses currentSessionOrNull for auto-refresh)
     suspend fun isUserLoggedIn(): Boolean {
         return try {
-            supabase.auth.currentUserOrNull() != null
+            // This will automatically refresh the token if expired
+            val session = supabase.auth.currentSessionOrNull()
+            session != null
         } catch (e: Exception) {
             Log.e("AuthManager", "Error checking login status", e)
+            false
+        }
+    }
+
+    // Manually refresh the session to keep user logged in
+    suspend fun refreshSession(): Boolean {
+        return try {
+            // Check if there's a session before trying to refresh
+            val currentSession = supabase.auth.currentSessionOrNull()
+            if (currentSession == null) {
+                Log.d("AuthManager", "No session to refresh")
+                return false
+            }
+
+            supabase.auth.refreshCurrentSession()
+            Log.d("AuthManager", "Session refreshed successfully")
+            true
+        } catch (e: Exception) {
+            Log.e("AuthManager", "Error refreshing session: ${e.message}")
             false
         }
     }

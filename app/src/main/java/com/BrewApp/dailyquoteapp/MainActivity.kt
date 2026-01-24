@@ -49,8 +49,19 @@ class MainActivity : ComponentActivity() {
 
                     if (isRecovery) {
                         startDestination = Screens.NewPassword.route
-                    } else if (authManager.isUserLoggedIn()) {
-                        startDestination = Screens.Home.route
+                    } else {
+                        // Use suspend function properly
+                        val isLoggedIn = authManager.isUserLoggedIn()
+                        if (isLoggedIn) {
+                            startDestination = Screens.Home.route
+                            // Only refresh session if user is actually logged in
+                            try {
+                                authManager.refreshSession()
+                            } catch (e: Exception) {
+                                // Session refresh failed, but user still has valid session
+                                // The auto-refresh will handle it
+                            }
+                        }
                     }
                     isAuthChecked = true
                 }

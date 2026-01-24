@@ -2,6 +2,8 @@ package com.BrewApp.dailyquoteapp.data.auth
 
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.gotrue.Auth
+import io.github.jan.supabase.gotrue.FlowType
+import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.serializer.KotlinXSerializer
 import io.github.jan.supabase.storage.Storage
@@ -17,7 +19,14 @@ object SupabaseClient {
             ignoreUnknownKeys = true
         })
 
-        install(Auth)
+        install(Auth) {
+            flowType = FlowType.PKCE
+            scheme = "app"
+            host = "supabase.com"
+            // Enable automatic token refresh
+            autoLoadFromStorage = true
+            autoSaveToStorage = true
+        }
         install(Postgrest)
         install(Storage)
     }
