@@ -21,6 +21,10 @@ class LoginViewModel : ViewModel() {
     private val _password = MutableStateFlow("")
     val password: StateFlow<String> = _password.asStateFlow()
 
+    // Track last reset request time to prevent rate limiting
+    private var lastResetRequestTime = 0L
+    private val RESET_COOLDOWN_MS = 25000L // 25 seconds
+
     fun updateEmail(newEmail: String) {
         _email.value = newEmail
     }
@@ -57,7 +61,7 @@ class LoginViewModel : ViewModel() {
         resetPasswordWithEmail(_email.value)
     }
 
-    // New method - accepts email parameter
+    // New method - accepts email parameter with rate limiting
     fun resetPasswordWithEmail(email: String) {
         if (email.isBlank()) {
             _loginState.value = LoginState.Error("Please enter your email")
@@ -70,14 +74,29 @@ class LoginViewModel : ViewModel() {
             return
         }
 
+        // Prevent rapid successive calls (rate limit protection)
+        val currentTime = System.currentTimeMillis()
+        val timeSinceLastRequest = currentTime - lastResetRequestTime
+        if (timeSinceLastRequest < RESET_COOLDOWN_MS) {
+            val remainingSeconds = ((RESET_COOLDOWN_MS - timeSinceLastRequest) / 1000).toInt()
+            _loginState.value = LoginState.Error("Please wait $remainingSeconds seconds before requesting another reset")
+            return
+        }
+
         viewModelScope.launch {
             _loginState.value = LoginState.Loading
+            lastResetRequestTime = System.currentTimeMillis()
+
             when (val result = authManager.resetPassword(email)) {
                 is AuthResult.Success -> {
                     _loginState.value = LoginState.PasswordResetSent
                 }
                 is AuthResult.Error -> {
                     _loginState.value = LoginState.Error(result.message)
+                    // Reset the timer if there was an error (allow retry sooner)
+                    if (!result.message.contains("wait", ignoreCase = true)) {
+                        lastResetRequestTime = 0L
+                    }
                 }
             }
         }

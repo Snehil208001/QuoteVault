@@ -148,6 +148,7 @@ class AuthManager {
                 this.password = password
                 this.data = userMetadata
             }
+            Log.d("AuthManager", "Sign up successful")
             AuthResult.Success
         } catch (e: Exception) {
             Log.e("AuthManager", "Sign up failed", e)
@@ -162,6 +163,7 @@ class AuthManager {
                 this.email = email
                 this.password = password
             }
+            Log.d("AuthManager", "Sign in successful")
             AuthResult.Success
         } catch (e: Exception) {
             Log.e("AuthManager", "Sign in failed", e)
@@ -173,6 +175,7 @@ class AuthManager {
     suspend fun signOut(): AuthResult {
         return try {
             supabase.auth.signOut()
+            Log.d("AuthManager", "Sign out successful")
             AuthResult.Success
         } catch (e: Exception) {
             Log.e("AuthManager", "Sign out failed", e)
@@ -183,13 +186,21 @@ class AuthManager {
     // Reset password
     suspend fun resetPassword(email: String): AuthResult {
         return try {
+            Log.d("AuthManager", "Sending password reset email to: $email")
             supabase.auth.resetPasswordForEmail(
                 email = email,
                 redirectUrl = "io.supabase.dailyquoteapp://login-callback"
             )
+            Log.d("AuthManager", "Password reset email sent successfully")
             AuthResult.Success
         } catch (e: Exception) {
             Log.e("AuthManager", "Password reset failed", e)
+
+            // Handle rate limit error specifically
+            if (e.message?.contains("25 seconds") == true || e.message?.contains("security purposes") == true) {
+                return AuthResult.Error("Please wait 25 seconds before requesting another password reset.")
+            }
+
             AuthResult.Error(sanitizeErrorMessage(e.message))
         }
     }
@@ -219,6 +230,9 @@ class AuthManager {
         }
         if (msg.contains("Invalid login credentials", ignoreCase = true)) {
             return "Invalid email or password."
+        }
+        if (msg.contains("security purposes", ignoreCase = true)) {
+            return "Please wait before requesting another password reset."
         }
 
         return msg

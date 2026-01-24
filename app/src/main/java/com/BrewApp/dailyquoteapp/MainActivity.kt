@@ -50,10 +50,14 @@ class MainActivity : ComponentActivity() {
 
                     // Check if this is a password recovery deep link
                     val isRecovery = data?.toString()?.contains("type=recovery") == true ||
-                            data?.host == "reset-password"
+                            data?.fragment?.contains("type=recovery") == true ||
+                            data?.host == "reset-password" ||
+                            data?.host == "login-callback" && data.toString().contains("recovery")
 
                     Log.d("MainActivity", "Is recovery: $isRecovery")
                     Log.d("MainActivity", "Full URI: ${data?.toString()}")
+                    Log.d("MainActivity", "Fragment: ${data?.fragment}")
+                    Log.d("MainActivity", "Query: ${data?.query}")
 
                     if (isRecovery) {
                         Log.d("MainActivity", "Navigating to NewPassword screen")
@@ -81,17 +85,20 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         Log.d("MainActivity", "onNewIntent called with: ${intent.data}")
+        Log.d("MainActivity", "onNewIntent fragment: ${intent.data?.fragment}")
         SupabaseClient.client.handleDeeplinks(intent)
 
         // If it's a recovery link and app is running, we need to handle it
         val data = intent.data
         val isRecovery = data?.toString()?.contains("type=recovery") == true ||
-                data?.host == "reset-password"
+                data?.fragment?.contains("type=recovery") == true ||
+                data?.host == "reset-password" ||
+                data?.host == "login-callback" && data.toString().contains("recovery")
 
         if (isRecovery) {
-            Log.d("MainActivity", "Recovery link detected in running app")
-            // You might want to navigate programmatically here
-            // For now, the deep link should be handled by Supabase
+            Log.d("MainActivity", "Recovery link detected in running app - should navigate to NewPassword")
+            // The deep link will be handled by Supabase client
+            // You may want to programmatically navigate here if needed
         }
     }
 }

@@ -21,8 +21,9 @@ object SupabaseClient {
 
         install(Auth) {
             flowType = FlowType.PKCE
-            scheme = "app"
-            host = "supabase.com"
+            // FIXED: Updated to match the redirect URL
+            scheme = "io.supabase.dailyquoteapp"
+            host = "login-callback"
             // Enable automatic token refresh
             autoLoadFromStorage = true
             autoSaveToStorage = true
