@@ -1,6 +1,7 @@
 package com.BrewApp.dailyquoteapp
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -45,35 +46,52 @@ class MainActivity : ComponentActivity() {
 
                 LaunchedEffect(Unit) {
                     val data = intent?.data
-                    val isRecovery = data?.toString()?.contains("type=recovery") == true
+                    Log.d("MainActivity", "Intent data: $data")
+
+                    // Check if this is a password recovery deep link
+                    val isRecovery = data?.toString()?.contains("type=recovery") == true ||
+                            data?.host == "reset-password"
+
+                    Log.d("MainActivity", "Is recovery: $isRecovery")
+                    Log.d("MainActivity", "Full URI: ${data?.toString()}")
 
                     if (isRecovery) {
+                        Log.d("MainActivity", "Navigating to NewPassword screen")
                         startDestination = Screens.NewPassword.route
+                    } else if (authManager.isUserLoggedIn()) {
+                        Log.d("MainActivity", "User is logged in, going to Home")
+                        startDestination = Screens.Home.route
                     } else {
-                        // Use suspend function properly
-                        val isLoggedIn = authManager.isUserLoggedIn()
-                        if (isLoggedIn) {
-                            startDestination = Screens.Home.route
-                            // Only refresh session if user is actually logged in
-                            try {
-                                authManager.refreshSession()
-                            } catch (e: Exception) {
-                                // Session refresh failed, but user still has valid session
-                                // The auto-refresh will handle it
-                            }
-                        }
+                        Log.d("MainActivity", "User not logged in, going to Login")
+                        startDestination = Screens.Login.route
                     }
                     isAuthChecked = true
                 }
 
                 if (isAuthChecked) {
-                    // Pass the existing viewModel to the graph if possible, or let screens get their own
-                    // Since PreferencesViewModel uses SharedPreferences, separate instances will stay in sync.
                     AppNavGraph(startDestination = startDestination)
                 } else {
                     Box(modifier = Modifier.fillMaxSize().background(Color.White))
                 }
             }
+        }
+    }
+
+    // Handle new intents (when app is already running)
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        Log.d("MainActivity", "onNewIntent called with: ${intent.data}")
+        SupabaseClient.client.handleDeeplinks(intent)
+
+        // If it's a recovery link and app is running, we need to handle it
+        val data = intent.data
+        val isRecovery = data?.toString()?.contains("type=recovery") == true ||
+                data?.host == "reset-password"
+
+        if (isRecovery) {
+            Log.d("MainActivity", "Recovery link detected in running app")
+            // You might want to navigate programmatically here
+            // For now, the deep link should be handled by Supabase
         }
     }
 }

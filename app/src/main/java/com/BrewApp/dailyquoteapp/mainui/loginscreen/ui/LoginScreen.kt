@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.rounded.FormatQuote
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,6 +34,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -73,6 +75,8 @@ fun LoginScreen(
     val email by viewModel.email.collectAsState()
     val password by viewModel.password.collectAsState()
     var passwordVisible by remember { mutableStateOf(false) }
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    var forgotPasswordEmail by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Handle login state changes
@@ -88,6 +92,8 @@ fun LoginScreen(
             }
             is LoginState.PasswordResetSent -> {
                 snackbarHostState.showSnackbar("Password reset email sent! Check your inbox.")
+                showForgotPasswordDialog = false
+                forgotPasswordEmail = ""
                 viewModel.resetState()
             }
             else -> {}
@@ -110,7 +116,6 @@ fun LoginScreen(
         )
 
         // --- Decorative Background Blobs ---
-        // Top-Right Blue Blob
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -119,8 +124,6 @@ fun LoginScreen(
                 .blur(radius = 60.dp)
                 .background(PrimaryBlue.copy(alpha = 0.05f), CircleShape)
         )
-
-        // (Yellow blob removed as per previous request)
 
         // --- Main Content ---
         Column(
@@ -131,7 +134,6 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 1. Header Section
-            // Icon
             Box(
                 modifier = Modifier
                     .size(64.dp)
@@ -148,7 +150,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // NEW: App Name
             Text(
                 text = "QuoteVault",
                 fontFamily = PlayfairFont,
@@ -160,7 +161,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Title
             Text(
                 text = "Welcome Back",
                 fontFamily = PlayfairFont,
@@ -172,7 +172,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Subtitle
             Text(
                 text = "Sign in to continue your daily journey",
                 fontFamily = InterFont,
@@ -187,7 +186,6 @@ fun LoginScreen(
                 verticalArrangement = Arrangement.spacedBy(20.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Email Input
                 LoginTextField(
                     value = email,
                     onValueChange = { viewModel.updateEmail(it) },
@@ -198,7 +196,6 @@ fun LoginScreen(
                     enabled = loginState != LoginState.Loading
                 )
 
-                // Password Input
                 LoginTextField(
                     value = password,
                     onValueChange = { viewModel.updatePassword(it) },
@@ -264,7 +261,7 @@ fun LoginScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Forgot Password
+                // Forgot Password - Opens Dialog
                 Text(
                     text = "Forgot Password?",
                     fontFamily = InterFont,
@@ -273,12 +270,12 @@ fun LoginScreen(
                     color = TextSecondary,
                     modifier = Modifier.clickable {
                         if (loginState != LoginState.Loading) {
-                            viewModel.resetPassword()
+                            forgotPasswordEmail = email // Pre-fill with current email
+                            showForgotPasswordDialog = true
                         }
                     }
                 )
 
-                // Divider Line
                 Box(
                     modifier = Modifier
                         .width(200.dp)
@@ -286,7 +283,6 @@ fun LoginScreen(
                         .background(Color(0xFFE2E8F0))
                 )
 
-                // Sign Up Link
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
@@ -309,6 +305,92 @@ fun LoginScreen(
             }
         }
     }
+
+    // Forgot Password Dialog
+    if (showForgotPasswordDialog) {
+        ForgotPasswordDialog(
+            email = forgotPasswordEmail,
+            onEmailChange = { forgotPasswordEmail = it },
+            onDismiss = { showForgotPasswordDialog = false },
+            onConfirm = {
+                if (forgotPasswordEmail.isNotBlank()) {
+                    viewModel.resetPasswordWithEmail(forgotPasswordEmail)
+                }
+            },
+            isLoading = loginState == LoginState.Loading
+        )
+    }
+}
+
+@Composable
+fun ForgotPasswordDialog(
+    email: String,
+    onEmailChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    isLoading: Boolean
+) {
+    AlertDialog(
+        onDismissRequest = { if (!isLoading) onDismiss() },
+        title = {
+            Text(
+                text = "Reset Password",
+                fontFamily = PlayfairFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "Enter your email address and we'll send you a link to reset your password.",
+                    fontFamily = InterFont,
+                    fontSize = 14.sp,
+                    color = TextSecondary,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = onEmailChange,
+                    label = { Text("Email Address") },
+                    placeholder = { Text("hello@example.com") },
+                    singleLine = true,
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PrimaryBlue,
+                        focusedLabelColor = PrimaryBlue,
+                        cursorColor = PrimaryBlue
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = !isLoading && email.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    Text("Send Reset Link", fontFamily = InterFont)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isLoading
+            ) {
+                Text("Cancel", color = TextSecondary, fontFamily = InterFont)
+            }
+        }
+    )
 }
 
 @Composable
@@ -325,7 +407,6 @@ fun LoginTextField(
     enabled: Boolean = true
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        // Label
         Text(
             text = label,
             fontFamily = InterFont,
@@ -335,7 +416,6 @@ fun LoginTextField(
             modifier = Modifier.padding(start = 16.dp)
         )
 
-        // Input Field
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,

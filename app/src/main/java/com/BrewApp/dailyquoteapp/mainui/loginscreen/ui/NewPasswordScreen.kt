@@ -1,6 +1,6 @@
 package com.BrewApp.dailyquoteapp.mainui.loginscreen.ui
 
-
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,11 +15,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,13 +56,23 @@ fun NewPasswordScreen(
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
 
     val scope = rememberCoroutineScope()
-    // We can instantiate AuthManager or access Supabase directly.
-    // Since AuthManager wraps Supabase, we'll use it if possible,
-    // but modifyUser is a direct Supabase call we implemented earlier.
-    // For simplicity here, we use the AuthManager logic.
     val authManager = remember { AuthManager() }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Show error/success messages
+    LaunchedEffect(errorMessage, successMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            errorMessage = null
+        }
+        successMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            successMessage = null
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -65,6 +80,13 @@ fun NewPasswordScreen(
             .background(BackgroundCream),
         contentAlignment = Alignment.Center
     ) {
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -73,10 +95,27 @@ fun NewPasswordScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Icon
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .background(PrimaryBlue.copy(alpha = 0.1f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Lock,
+                    contentDescription = "Password Reset",
+                    tint = PrimaryBlue,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 text = "Set New Password",
                 fontFamily = PlayfairFont,
-                fontSize = 28.sp,
+                fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
             )
@@ -100,7 +139,8 @@ fun NewPasswordScreen(
                 keyboardType = KeyboardType.Password,
                 isPassword = true,
                 isPasswordVisible = passwordVisible,
-                onVisibilityChange = { passwordVisible = !passwordVisible }
+                onVisibilityChange = { passwordVisible = !passwordVisible },
+                enabled = !isLoading
             )
 
             // Confirm Password Field
@@ -113,50 +153,69 @@ fun NewPasswordScreen(
                 keyboardType = KeyboardType.Password,
                 isPassword = true,
                 isPasswordVisible = confirmPasswordVisible,
-                onVisibilityChange = { confirmPasswordVisible = !confirmPasswordVisible }
+                onVisibilityChange = { confirmPasswordVisible = !confirmPasswordVisible },
+                enabled = !isLoading
             )
 
-            if (errorMessage != null) {
+            // Password Requirements
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
-                    text = errorMessage!!,
-                    color = Color.Red,
-                    fontSize = 14.sp,
-                    fontFamily = InterFont
+                    text = "Password must:",
+                    fontFamily = InterFont,
+                    fontSize = 12.sp,
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Medium
                 )
+                PasswordRequirement("Be at least 6 characters long", password.length >= 6)
+                PasswordRequirement("Match in both fields", password.isNotEmpty() && password == confirmPassword)
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
+            // Update Button
             Button(
                 onClick = {
-                    if (password != confirmPassword) {
-                        errorMessage = "Passwords do not match"
-                        return@Button
-                    }
-                    if (password.length < 6) {
-                        errorMessage = "Password must be at least 6 characters"
-                        return@Button
-                    }
+                    // Validation
+                    when {
+                        password.isBlank() || confirmPassword.isBlank() -> {
+                            errorMessage = "Please fill in all fields"
+                        }
+                        password != confirmPassword -> {
+                            errorMessage = "Passwords do not match"
+                        }
+                        password.length < 6 -> {
+                            errorMessage = "Password must be at least 6 characters"
+                        }
+                        else -> {
+                            scope.launch {
+                                isLoading = true
+                                errorMessage = null
+                                try {
+                                    Log.d("NewPasswordScreen", "Attempting to update password")
 
-                    scope.launch {
-                        isLoading = true
-                        errorMessage = null
-                        try {
-                            // Using the direct Supabase call or exposing it via AuthManager
-                            // Assuming we updated AuthManager.kt to have modifyUser or similar.
-                            // If AuthManager doesn't expose it, we can use the client directly:
-                            // SupabaseClient.client.auth.modifyUser { this.password = password }
-                            // BUT, based on your AuthManager.kt provided earlier, we fixed `updateUserAvatarUrl`.
-                            // We should add a generic updatePassword method or call direct.
-                            // Let's call directly for safety in this snippet to avoid errors:
-                            com.BrewApp.dailyquoteapp.data.auth.SupabaseClient.client.auth.modifyUser {
-                                this.password = password
+                                    // Update password using Supabase
+                                    com.BrewApp.dailyquoteapp.data.auth.SupabaseClient.client.auth.modifyUser {
+                                        this.password = password
+                                    }
+
+                                    Log.d("NewPasswordScreen", "Password updated successfully")
+                                    successMessage = "Password updated successfully!"
+
+                                    // Wait a moment to show success message
+                                    kotlinx.coroutines.delay(1500)
+                                    onPasswordUpdated()
+                                } catch (e: Exception) {
+                                    Log.e("NewPasswordScreen", "Failed to update password", e)
+                                    errorMessage = "Error: ${e.message ?: "Failed to update password"}"
+                                } finally {
+                                    isLoading = false
+                                }
                             }
-                            onPasswordUpdated()
-                        } catch (e: Exception) {
-                            errorMessage = "Error: ${e.message}"
-                        } finally {
-                            isLoading = false
                         }
                     }
                 },
@@ -179,5 +238,26 @@ fun NewPasswordScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PasswordRequirement(text: String, isMet: Boolean) {
+    androidx.compose.foundation.layout.Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.CheckCircle,
+            contentDescription = null,
+            tint = if (isMet) Color(0xFF10B981) else Color.LightGray,
+            modifier = Modifier.size(16.dp)
+        )
+        Text(
+            text = text,
+            fontFamily = InterFont,
+            fontSize = 12.sp,
+            color = if (isMet) Color(0xFF10B981) else Color.Gray
+        )
     }
 }

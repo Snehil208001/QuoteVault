@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Cache directory for sharing images -->
+    <cache-path name="images" path="images/" />
+
+    <!-- External storage for saving images to gallery -->
+    <external-path name="external_files" path="." />
+
+    <!-- Internal storage -->
+    <files-path name="files" path="." />
+</paths>

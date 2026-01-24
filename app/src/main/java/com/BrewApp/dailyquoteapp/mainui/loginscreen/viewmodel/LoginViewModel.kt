@@ -1,6 +1,5 @@
 package com.BrewApp.dailyquoteapp.mainui.loginscreen.viewmodel
 
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.BrewApp.dailyquoteapp.data.auth.AuthManager
@@ -49,15 +48,31 @@ class LoginViewModel : ViewModel() {
         }
     }
 
+    // Old method - kept for backwards compatibility
     fun resetPassword() {
         if (_email.value.isBlank()) {
             _loginState.value = LoginState.Error("Please enter your email")
             return
         }
+        resetPasswordWithEmail(_email.value)
+    }
+
+    // New method - accepts email parameter
+    fun resetPasswordWithEmail(email: String) {
+        if (email.isBlank()) {
+            _loginState.value = LoginState.Error("Please enter your email")
+            return
+        }
+
+        // Basic email validation
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _loginState.value = LoginState.Error("Please enter a valid email address")
+            return
+        }
 
         viewModelScope.launch {
             _loginState.value = LoginState.Loading
-            when (val result = authManager.resetPassword(_email.value)) {
+            when (val result = authManager.resetPassword(email)) {
                 is AuthResult.Success -> {
                     _loginState.value = LoginState.PasswordResetSent
                 }
