@@ -8,7 +8,7 @@ QuoteVault is a modern Android application designed to help users discover, coll
 
 | **Demo Video** | **Download APK** |
 |:---:|:---:|
-| [🎥 Watch on Google Drive](#) | [📲 Download QuoteVault.apk](https://drive.google.com/file/d/1Ur2akpoiuLomBaPhaTSNiY6rYmXxzGO2/view?usp=sharing) |
+| [🎥 Watch on Loom](https://www.loom.com/share/94d5f701433349d18274f7c8705c1e68) | [📲 Download QuoteVault.apk](https://drive.google.com/drive/folders/1cqoafNxLKwpcvo8I64UOg_TXtS_6MvyF?usp=sharing) |
 | *Walkthrough of Auth, Sync & Widgets* | *Latest Build (v1.0)* |
 
 *(Note: Please insert the actual Google Drive and APK links above before submitting)*
@@ -41,8 +41,13 @@ To execute Step 3 of the workflow, the following detailed prompts were used in *
 
 | Favorites & Collections | User Profile | Settings |
 |:---:|:---:|:---:|
-| <img src="app/src/main/res/drawable/favouritescreen.png" width="250" /> | <img src="app/src/main/res/drawable/profilescreen.png" width="250" /> | <img src="app/src/main/res/drawable/quotepreferencescreen.png" width="250" /> |
-| **Saved Quotes** | **Profile Management** | **Personalization** |
+| <img src="app/src/main/res/drawable/favouritescreen.png" width="250" /> | <img src="app/src/main/res/drawable/profilescreen.png" width="250" /> | <img src="app/src/main/res/drawable/quotepreferencescreen.png" width="250" /> | <img src="app/src/main/res/drawable/Widget.png" width="250" /> |
+| **Saved Quotes** | **Profile Management** | **Personalization** | **Widget** |
+
+| Home Screen Widget |
+|:---:|
+| <img src="app/src/main/res/drawable/Widget.png" width="250" /> |
+| **Daily Quote Widget** |
 
 ## 🚀 Features
 
